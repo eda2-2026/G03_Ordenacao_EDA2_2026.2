@@ -185,16 +185,16 @@ export default function App() {
   const [novaDescricao, setNovaDescricao] = useState("");
   const [erroForm, setErroForm] = useState("");
 
-  // Fluxo de filtragem e ordenação (usando useMemo para performance)
+  // Fluxo de filtragem e ordenação 
   const remediosExibidos = useMemo(() => {
     // 1. Primeiro filtra pela categoria
     const filtrados = remedios.filter(
       (r) => categoriaAtiva === "Todos" || r.categoria === categoriaAtiva
     );
 
-    // 2. Depois aplica a ordenação selecionada
+    // 2. Depois aplica a ordenação
     if (ordenacao === "nome") {
-      return radixSortMSD(filtrados); // Chamada do nosso algoritmo
+      return radixSortMSD(filtrados); 
     } else {
       // Ordenação padrão numérica do JS
       return [...filtrados].sort((a, b) => a.codigo - b.codigo);
@@ -360,7 +360,7 @@ export default function App() {
             </>
           )}
 
-          {/*  BUSCA (Permanece a mesma lógica anterior, apenas ajustei o layout para fluidez) */}
+          {}
           {aba === "busca" && (
             <div className="max-w-xl mx-auto space-y-5 mt-4">
               <div className="grid grid-cols-2 gap-3">
