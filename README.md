@@ -50,3 +50,8 @@ index.html        página principal
 package.json      dependências e comandos do projeto
 vite.config.ts    configuração do Vite
 ```
+## Apresentação
+
+Vídeo com a demonstração e explicação dos algoritmos de ordenação:
+
+[▶️ Assistir à apresentação](https://youtu.be/RS14yeaORpo)
