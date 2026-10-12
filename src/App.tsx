@@ -84,7 +84,7 @@ const REMEDIOS_INICIAIS: Remedio[] = [
 // ── Algoritmos de Busca ────────────────────────────────────────────────────
 
 function buscaBinariaPorCodigo(lista: Remedio[], codigo: number): ResultadoBusca {
-  const ordenada = [...lista].sort((a, b) => a.codigo - b.codigo);
+  const ordenada = countingSortPorCodigo(lista);
   let baixo = 0;
   let alto = ordenada.length - 1;
   let passos = 0;
@@ -125,7 +125,7 @@ function radixSortMSD(lista: Remedio[], index: number = 0): Remedio[] {
   // Condição de parada: se a lista tem 1 ou 0 elementos, já está ordenada.
   if (lista.length <= 1) return lista;
 
-  // Criamos 257 "buckets" (baldes). 
+  // Criamos 257 "buckets" (baldes).
   // O índice 0 será para strings que já acabaram (comprimento menor que o index atual).
   // Os índices 1 a 256 representam os caracteres na tabela ASCII.
   const buckets: Remedio[][] = Array.from({ length: 257 }, () => []);
@@ -145,7 +145,7 @@ function radixSortMSD(lista: Remedio[], index: number = 0): Remedio[] {
       // Pegamos o valor ASCII do caractere atual. Somamos 1 para pular o balde 0.
       const charCode = nomeNormalizado.charCodeAt(index);
       // Evitamos estouro de array caso haja um caractere muito estranho fora do range normal
-      const bucketIndex = charCode < 256 ? charCode + 1 : 256; 
+      const bucketIndex = charCode < 256 ? charCode + 1 : 256;
       buckets[bucketIndex].push(item);
     }
   }
@@ -153,7 +153,7 @@ function radixSortMSD(lista: Remedio[], index: number = 0): Remedio[] {
   // As strings do balde 0 já estão prontas (são mais curtas que as outras)
   let resultado: Remedio[] = [...buckets[0]];
 
-  // Para os baldes de 1 a 256, chamamos a função recursivamente para o *próximo* caractere (index + 1)
+  // Para os baldes de 1 a 256, chamamos a função recursivamente para o próximo caractere
   for (let i = 1; i <= 256; i++) {
     if (buckets[i].length > 0) {
       resultado = resultado.concat(radixSortMSD(buckets[i], index + 1));
@@ -163,13 +163,59 @@ function radixSortMSD(lista: Remedio[], index: number = 0): Remedio[] {
   return resultado;
 }
 
+// ── Algoritmo de Ordenação: Counting Sort ───────────────────────────────────
+
+/**
+ * Ordena os remédios pelo código em ordem crescente.
+ * Mantém os objetos completos e não modifica a lista original.
+ * Complexidade de tempo e espaço: O(n + k),
+ * sendo k = maior código - menor código + 1.
+ */
+function countingSortPorCodigo(lista: Remedio[]): Remedio[] {
+  if (lista.length === 0) return [];
+
+  // Descobre o intervalo dos códigos.
+  let menor = lista[0].codigo;
+  let maior = lista[0].codigo;
+
+  for (const remedio of lista) {
+    if (remedio.codigo < menor) menor = remedio.codigo;
+    if (remedio.codigo > maior) maior = remedio.codigo;
+  }
+
+  const contagem: number[] = new Array(maior - menor + 1).fill(0);
+
+  // Conta quantas vezes cada código aparece.
+  for (const remedio of lista) {
+    contagem[remedio.codigo - menor]++;
+  }
+
+  // Acumula as contagens para descobrir as posições de saída.
+  for (let i = 1; i < contagem.length; i++) {
+    contagem[i] += contagem[i - 1];
+  }
+
+  const ordenada: Remedio[] = new Array(lista.length);
+
+  // Percorre de trás para frente para preservar a estabilidade.
+  for (let i = lista.length - 1; i >= 0; i--) {
+    const remedio = lista[i];
+    const indice = remedio.codigo - menor;
+
+    contagem[indice]--;
+    ordenada[contagem[indice]] = remedio;
+  }
+
+  return ordenada;
+}
+
 // ── Componente Principal ───────────────────────────────────────────────────
 
 export default function App() {
   const [remedios, setRemedios] = useState<Remedio[]>(REMEDIOS_INICIAIS);
   const [categoriaAtiva, setCategoriaAtiva] = useState<Categoria | "Todos">("Todos");
   const [aba, setAba] = useState<"catalogo" | "busca">("catalogo");
-  
+
   // Controle de Ordenação na Interface
   const [ordenacao, setOrdenacao] = useState<"codigo" | "nome">("codigo");
 
@@ -185,7 +231,7 @@ export default function App() {
   const [novaDescricao, setNovaDescricao] = useState("");
   const [erroForm, setErroForm] = useState("");
 
-  // Fluxo de filtragem e ordenação 
+  // Fluxo de filtragem e ordenação
   const remediosExibidos = useMemo(() => {
     // 1. Primeiro filtra pela categoria
     const filtrados = remedios.filter(
@@ -194,10 +240,10 @@ export default function App() {
 
     // 2. Depois aplica a ordenação
     if (ordenacao === "nome") {
-      return radixSortMSD(filtrados); 
+      return radixSortMSD(filtrados);
     } else {
-      // Ordenação padrão numérica do JS
-      return [...filtrados].sort((a, b) => a.codigo - b.codigo);
+      // Ordenação por código usando Counting Sort
+      return countingSortPorCodigo(filtrados);
     }
   }, [remedios, categoriaAtiva, ordenacao]);
 
@@ -217,7 +263,7 @@ export default function App() {
     if (isNaN(codigo) || codigo <= 0) { setErroForm("Informe um código válido."); return; }
     if (remedios.some((r) => r.codigo === codigo)) { setErroForm("Código já cadastrado."); return; }
     if (!novoNome.trim()) { setErroForm("Informe o nome do remédio."); return; }
-    
+
     setErroForm("");
     setRemedios((prev) => [
       ...prev,
@@ -309,7 +355,7 @@ export default function App() {
 
         {/* Conteúdo principal */}
         <main className="flex-1 p-5">
-          {/*  CATÁLOGO */}
+          {/* CATÁLOGO */}
           {aba === "catalogo" && (
             <>
               {/* Controle de Ordenação */}
@@ -317,12 +363,12 @@ export default function App() {
                 <h2 className="text-lg font-semibold text-white">Inventário</h2>
                 <div className="flex items-center gap-2 text-sm">
                   <span style={{ color: "#64748b" }}>Ordenar por:</span>
-                  <select 
-                    value={ordenacao} 
+                  <select
+                    value={ordenacao}
                     onChange={(e) => setOrdenacao(e.target.value as "codigo" | "nome")}
                     className="bg-[#13131e] border border-[#1e1e2e] rounded-md px-3 py-1 outline-none text-[#e2e8f0]"
                   >
-                    <option value="codigo">Código</option>
+                    <option value="codigo">Código (Counting Sort)</option>
                     <option value="nome">Nome (Radix Sort)</option>
                   </select>
                 </div>
